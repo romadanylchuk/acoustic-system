@@ -70,12 +70,22 @@ boss_h       = floor_h + 3.0;
 // Отвір для дротів з акумуляторного відсіку
 wire_hole_d  = 6.0;
 
-// Антена nRF24 — бічний отвір SMA
-sma_d        = 10.0;
+// Панельні SMA роз'єми (подовжувач SMA-SMA всередині корпусу → герметичність)
+sma_panel_d  = 6.5;    // отвір під панельний SMA роз'єм (різьба M6.35)
+sma_spacing  = 22.0;   // відстань між центрами двох роз'ємів по осі Y
 
-// USB-C отвір для програмування
-usb_w        = 10.0;
-usb_h        = 5.0;
+
+// Гніздо під батарейний відсік (виступає вниз від дна)
+bat_outer       = 51.5;              // outer_x/outer_y акумуляторного відсіку
+socket_gap      = 0.4;               // зазор посадки
+socket_inner    = bat_outer + socket_gap;
+socket_wall_t   = 2.0;              // товщина стінки гнізда
+socket_depth    = 10.0;             // глибина гнізда (вниз)
+socket_outer    = socket_inner + socket_wall_t * 2;
+socket_boss_d   = 8.0;              // діаметр бонки
+socket_boss_ext = 6.0;              // виступ бонки від зовнішньої стінки
+nut_af          = 5.5;              // М3 гайка: розмір під ключ
+nut_h           = 2.4;              // висота М3 гайки
 
 echo("=== РОЗМІРИ ЕЛЕКТРОННОГО ВІДСІКУ ===");
 echo("Зовнішній X:", outer_x, "мм");
@@ -128,22 +138,26 @@ module top_bosses() {
 }
 
 // Стійки під макетну плату (4 кути)
+// Додаються ПІСЛЯ різниці (Pattern B), щоб порожнина їх не зрізала
 module pcb_standoffs() {
-    h     = floor_h + 4.0;  // висота стійки
-    d_out = 5.0;
-    d_in  = 2.5;            // М2.5 або просто тримає плату
+    h     = 7.0;   // від дна корпусу → 4мм виступають над підлогою
+    d_out = 6.0;   // діаметр бобишки
+    d_in  = 2.2;   // отвір під саморіз PT2.5 в PETG/ASA
+    // Монтажні отвори плати: 2 × 2.54 мм = 5.08 мм від краю → крок 79.84 × 59.84 мм
+    pcb_hole = 2 * 2.54;
     positions = [
-        [ pcb_x/2 - 3,  pcb_y/2 - 3],
-        [-pcb_x/2 + 3,  pcb_y/2 - 3],
-        [ pcb_x/2 - 3, -pcb_y/2 + 3],
-        [-pcb_x/2 + 3, -pcb_y/2 + 3],
+        [ pcb_x/2 - pcb_hole,  pcb_y/2 - pcb_hole],
+        [-pcb_x/2 + pcb_hole,  pcb_y/2 - pcb_hole],
+        [ pcb_x/2 - pcb_hole, -pcb_y/2 + pcb_hole],
+        [-pcb_x/2 + pcb_hole, -pcb_y/2 + pcb_hole],
     ];
     for (p = positions)
         translate([p[0], p[1], 0])
         difference() {
             cylinder(d = d_out, h = h, $fn = 24);
-            translate([0, 0, -0.1])
-            cylinder(d = d_in, h = h + 0.2, $fn = 20);
+            // Сліпий отвір: починається від рівня підлоги, не виходить з дна
+            translate([0, 0, floor_h - 0.1])
+            cylinder(d = d_in, h = h - floor_h + 0.2, $fn = 20);
         }
 }
 
@@ -159,7 +173,47 @@ module pcb_guides() {
 
 // --- ОСНОВНА ДЕТАЛЬ -----------------------------------------
 
+// Квадратне гніздо під батарейний відсік (нижче дна корпусу)
+// Всі 4 стінки: 2мм. Бонка на Y+ стінці — доступна ззовні (стін корпусу тут немає)
+module battery_socket() {
+    difference() {
+        union() {
+            // Чотири стінки гнізда (рівномірні 2мм)
+            translate([-socket_outer/2, -socket_outer/2, -socket_depth])
+            cube([socket_outer, socket_outer, socket_depth]);
+
+            // Бонка на Y+ стінці
+            translate([0, socket_outer/2, -socket_depth/2])
+            rotate([-90, 0, 0])
+            cylinder(d = socket_boss_d, h = socket_boss_ext, $fn = 32);
+        }
+
+        // Внутрішня порожнина гнізда (відкрита зверху)
+        translate([-socket_inner/2, -socket_inner/2, -socket_depth - 0.1])
+        cube([socket_inner, socket_inner, socket_depth + 0.1]);
+
+        // Наскрізний отвір М3: від кінця бонки крізь стінку до порожнини
+        translate([0, socket_outer/2 + socket_boss_ext + 0.1, -socket_depth/2])
+        rotate([90, 0, 0])
+        cylinder(d = screw_d,
+                 h = socket_boss_ext + socket_wall_t + nut_h + 1.0,
+                 $fn = 20);
+
+        // Шестигранне гніздо під гайку М3 (відкрите в бік порожнини — вставляти знизу)
+        translate([0, socket_inner/2, -socket_depth/2])
+        rotate([-90, 0, 0])
+        cylinder(d = nut_af / cos(30), h = nut_h + 0.1, $fn = 6);
+    }
+}
+
 module electronics_compartment() {
+    union() {
+    // Гніздо під батарейний відсік — виступає вниз від дна
+    battery_socket();
+
+    // Стійки під PCB — поза difference(), щоб порожнина їх не зрізала
+    pcb_standoffs();
+
     difference() {
         union() {
             // Основний корпус
@@ -175,9 +229,6 @@ module electronics_compartment() {
 
             // Бобишки верхні (до мікрофонної кришки)
             top_bosses();
-
-            // Стійки під макетну плату
-            pcb_standoffs();
         }
 
         // Внутрішня порожнина
@@ -188,30 +239,25 @@ module electronics_compartment() {
         translate([0, 0, -0.1])
         cylinder(d = wire_hole_d, h = floor_h + 0.2, $fn = 30);
 
-        // Отвір USB-C для програмування ESP32
-        // (на передній стінці, Y+)
-        translate([-usb_w/2, outer_y/2 - 0.1, floor_h + 8])
-        cube([usb_w, wall + 0.2, usb_h]);
 
-        // Отвір SMA антени nRF24
-        // (на правій стінці, X+)
+        // Отвір SMA #1 — nRF24L01 2.4 ГГц (піgtail SMA-SMA всередині)
+        // (на правій стінці, X+, Y-)
         translate([outer_x/2 - 0.1,
-                   -nrf_y/2,
-                   floor_h + pcb_h + 4 + nrf_h/2])
+                   -sma_spacing/2,
+                   floor_h + inner_z/2])
         rotate([0, 90, 0])
-        cylinder(d = sma_d, h = wall + 0.2, $fn = 30);
+        cylinder(d = sma_panel_d, h = wall + 0.2, $fn = 30);
 
-        // Отвір антени LoRa Ra-02 (IPEX кабель до SMA на кришці)
-        // на верхньому фланці — прохід кабелю
-        translate([-3, outer_y/2 - wall - 0.1,
-                   outer_z + top_flange/2])
-        cube([6, wall + 0.2, top_flange/2 + 0.1]);
+        // Отвір SMA #2 — LoRa Ra-02 433 МГц (піgtail SMA-SMA всередині)
+        // (на правій стінці, X+, Y+)
+        translate([outer_x/2 - 0.1,
+                   +sma_spacing/2,
+                   floor_h + inner_z/2])
+        rotate([0, 90, 0])
+        cylinder(d = sma_panel_d, h = wall + 0.2, $fn = 30);
 
         // Гвинти М3 верхнього фланця (наскрізні)
         top_screw_holes();
-
-        // Гвинти М3 нижнього фланця (наскрізні)
-        bottom_screw_holes();
 
         // Зрізати напрямні ребра з внутрішньої порожнини
         translate([-inner_x/2, -inner_y/2, floor_h])
@@ -220,6 +266,7 @@ module electronics_compartment() {
 
     // Напрямні ребра (додаємо після різниці)
     // pcb_guides();  // розкоментуй якщо потрібні
+    } // end union()
 }
 
 // Наскрізні отвори для верхніх гвинтів
@@ -287,6 +334,7 @@ cube([mini_x, mini_y, mini_h]); // Mini360
 // - Заповнення: 40% gyroid
 // - Периметри: 3
 // - Після друку: heat inserts М3 у всі бобишки
-// - USB-C отвір: для підключення програматора
-// - SMA отвір: для антени nRF24L01
+// - Прошивка: OTA через WiFi/BT (USB-C отвір не потрібен)
+// - SMA #1 (X+, Y-): підключити pigtail до nRF24L01
+// - SMA #2 (X+, Y+): підключити pigtail до LoRa Ra-02
 // ============================================================
