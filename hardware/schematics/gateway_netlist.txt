@@ -1,0 +1,245 @@
+;; KiCad-compatible Text Netlist
+;; Gateway Node — TTGO LoRa32 (ESP32 + onboard SX1278 LoRa)
+;; Acoustic Reconnaissance System — Gateway / Command Post (CP) Node
+;; Generated from: firmware/gateway/README.md + docs/acoustic_system_context.md
+
+(net-list
+  (version 1)
+  (design
+    (source "acoustic-system/hardware/schematics/gateway_netlist.txt")
+    (date "2026-03-23")
+    (tool "hand-written / KiCad 8 compatible")
+    (comment_1 "Board: TTGO LoRa32 (LILYGO T3 v1.6 or similar)")
+    (comment_2 "MCU: ESP32 dual-core 240MHz, 4MB Flash, 8MB PSRAM (variant dependent)")
+    (comment_3 "Onboard LoRa: SX1278 433MHz — connected internally, not in this netlist")
+    (comment_4 "Onboard OLED: SSD1306 0.96\" 128x64 — connected internally via I2C")
+    (comment_5 "External nRF24L01 PA+LNA connected via standard SPI pins")
+  )
+
+  ;; =========================================================
+  ;; COMPONENTS
+  ;; =========================================================
+
+  (components
+
+    ;; --- MCU + onboard peripherals ---
+    (comp (ref U1)
+      (value "TTGO LoRa32 ESP32")
+      (description "ESP32 module on TTGO LoRa32 board. Onboard: SX1278 LoRa 433MHz, SSD1306 OLED 0.96\", LiPo charger")
+    )
+
+    ;; --- Onboard LoRa (internal wiring, informational) ---
+    (comp (ref U2)
+      (value "SX1278 (onboard)")
+      (description "Onboard LoRa 433MHz transceiver on TTGO LoRa32. Internally wired to ESP32 SPI bus. Receives metadata packets from autonomous stations via FHSS.")
+    )
+
+    ;; --- Onboard OLED (internal wiring, informational) ---
+    (comp (ref DSP1)
+      (value "SSD1306 OLED 0.96\" (onboard)")
+      (description "Onboard 128x64 OLED display on TTGO LoRa32. Internally wired via I2C. Shows: active station count, last event class+time, LoRa RSSI, sync status.")
+    )
+
+    ;; --- External nRF24L01 ---
+    (comp (ref U3)
+      (value "nRF24L01 PA+LNA")
+      (description "External 2.4GHz radio module for on-demand audio fragment retrieval from autonomous stations. PA+LNA variant for extended range.")
+    )
+
+    ;; --- Power ---
+    (comp (ref REG1)
+      (value "3.3V onboard LDO")
+      (description "3.3V regulator on TTGO LoRa32 board")
+    )
+  )
+
+  ;; =========================================================
+  ;; NETS
+  ;; =========================================================
+
+  (nets
+
+    ;; ---------------------------------------------------------
+    ;; POWER RAILS
+    ;; ---------------------------------------------------------
+
+    (net (name "+3V3")
+      (node (ref U1)   (pin VDD))
+      (node (ref U2)   (pin VCC))      ;; onboard, internal connection
+      (node (ref DSP1) (pin VCC))      ;; onboard, internal connection
+      (node (ref U3)   (pin VCC))
+      (node (ref REG1) (pin OUT))
+    )
+
+    (net (name "GND")
+      (node (ref U1)   (pin GND))
+      (node (ref U2)   (pin GND))      ;; onboard, internal connection
+      (node (ref DSP1) (pin GND))      ;; onboard, internal connection
+      (node (ref U3)   (pin GND))
+      (node (ref REG1) (pin GND))
+    )
+
+    ;; ---------------------------------------------------------
+    ;; SPI BUS — external nRF24L01 PA+LNA
+    ;; TTGO ESP32: MOSI=GPIO23, MISO=GPIO19, SCK=GPIO18
+    ;; Note: these are the standard VSPI pins on ESP32
+    ;; ---------------------------------------------------------
+
+    (net (name "SPI_MOSI")
+      (node (ref U1)  (pin GPIO23))
+      (node (ref U3)  (pin MOSI))
+    )
+
+    (net (name "SPI_MISO")
+      (node (ref U1)  (pin GPIO19))
+      (node (ref U3)  (pin MISO))
+    )
+
+    (net (name "SPI_SCK")
+      (node (ref U1)  (pin GPIO18))
+      (node (ref U3)  (pin SCK))
+    )
+
+    ;; ---------------------------------------------------------
+    ;; nRF24L01 PA+LNA — control signals
+    ;; ---------------------------------------------------------
+
+    (net (name "NRF_CSN")
+      (node (ref U1)  (pin GPIO5))
+      (node (ref U3)  (pin CSN))
+    )
+
+    (net (name "NRF_CE")
+      (node (ref U1)  (pin GPIO17))
+      (node (ref U3)  (pin CE))
+      ;; CE: chip enable — activates RX/TX mode
+    )
+
+    (net (name "NRF_IRQ")
+      (node (ref U1)  (pin GPIO16))
+      (node (ref U3)  (pin IRQ))
+      ;; IRQ: active-low interrupt from nRF24 to MCU
+    )
+
+    ;; ---------------------------------------------------------
+    ;; ONBOARD LoRa SX1278 — internal connections (informational)
+    ;; Exact internal pin mapping varies by TTGO LoRa32 revision.
+    ;; Common wiring for TTGO T3 v1.6:
+    ;;   MOSI=GPIO27, MISO=GPIO19, SCK=GPIO5, NSS=GPIO18,
+    ;;   DIO0=GPIO26, RST=GPIO23
+    ;; Check board schematic for exact revision.
+    ;; ---------------------------------------------------------
+
+    (net (name "LORA_SPI_MOSI_INTERNAL")
+      (node (ref U1)  (pin GPIO27))    ;; TTGO T3 v1.6 typical
+      (node (ref U2)  (pin MOSI))
+    )
+
+    (net (name "LORA_SPI_MISO_INTERNAL")
+      (node (ref U1)  (pin GPIO19))    ;; shared MISO on some revisions
+      (node (ref U2)  (pin MISO))
+    )
+
+    (net (name "LORA_SPI_SCK_INTERNAL")
+      (node (ref U1)  (pin GPIO5))     ;; TTGO T3 v1.6 typical
+      (node (ref U2)  (pin SCK))
+    )
+
+    (net (name "LORA_NSS_INTERNAL")
+      (node (ref U1)  (pin GPIO18))    ;; TTGO T3 v1.6 typical
+      (node (ref U2)  (pin NSS))
+    )
+
+    (net (name "LORA_DIO0_INTERNAL")
+      (node (ref U1)  (pin GPIO26))    ;; TTGO T3 v1.6 typical
+      (node (ref U2)  (pin DIO0))
+    )
+
+    (net (name "LORA_RST_INTERNAL")
+      (node (ref U1)  (pin GPIO23))    ;; TTGO T3 v1.6 typical
+      (node (ref U2)  (pin RST))
+    )
+
+    ;; ---------------------------------------------------------
+    ;; ONBOARD OLED SSD1306 — internal I2C connections (informational)
+    ;; Common on TTGO LoRa32: SDA=GPIO21, SCL=GPIO22
+    ;; ---------------------------------------------------------
+
+    (net (name "I2C_SDA_INTERNAL")
+      (node (ref U1)   (pin GPIO21))
+      (node (ref DSP1) (pin SDA))
+    )
+
+    (net (name "I2C_SCL_INTERNAL")
+      (node (ref U1)   (pin GPIO22))
+      (node (ref DSP1) (pin SCL))
+    )
+
+    ;; ---------------------------------------------------------
+    ;; USB/UART TO HOST (Rock Pi 4C+ server)
+    ;; TTGO onboard USB-to-UART via CP2102 or CH340
+    ;; Gateway relays LoRa metadata to server over serial
+    ;; ---------------------------------------------------------
+
+    (net (name "UART_TX_TO_HOST")
+      (node (ref U1)  (pin TXD0))
+      ;; Connected through onboard USB-UART chip to Rock Pi USB port
+    )
+
+    (net (name "UART_RX_FROM_HOST")
+      (node (ref U1)  (pin RXD0))
+      ;; Control commands from Rock Pi to gateway
+    )
+
+  ) ;; end nets
+
+) ;; end net-list
+
+
+;; =========================================================
+;; PIN ASSIGNMENT SUMMARY — TTGO LoRa32 ESP32
+;; =========================================================
+;;
+;;  GPIO  | Net Name                  | Connected To
+;; -------|---------------------------|----------------------------
+;;   5    | LORA_SPI_SCK_INTERNAL     | SX1278 SCK  (onboard)
+;;  16    | NRF_IRQ                   | nRF24L01 IRQ
+;;  17    | NRF_CE                    | nRF24L01 CE
+;;  18    | LORA_NSS_INTERNAL         | SX1278 NSS  (onboard)
+;;  19    | SPI_MISO / LORA_MISO      | nRF24L01 MISO (+ SX1278 MISO on some revisions)
+;;  21    | I2C_SDA_INTERNAL          | SSD1306 SDA (onboard)
+;;  22    | I2C_SCL_INTERNAL          | SSD1306 SCL (onboard)
+;;  23    | SPI_MOSI / LORA_RST       | nRF24L01 MOSI; SX1278 RST on T3v1.6
+;;  26    | LORA_DIO0_INTERNAL        | SX1278 DIO0 (onboard)
+;;  27    | LORA_SPI_MOSI_INTERNAL    | SX1278 MOSI (onboard)
+;;   5    | NRF_CSN                   | nRF24L01 CSN
+;;  18    | SPI_SCK                   | nRF24L01 SCK
+;;  23    | SPI_MOSI                  | nRF24L01 MOSI
+;;
+;; NOTE: GPIO pin conflicts between nRF24 SPI and onboard LoRa SPI
+;; may arise depending on TTGO board revision. Verify against the
+;; exact board schematic (T3 v1.6 vs v2.0 etc.) before PCB design.
+;; The nRF24 pin assignments in this file are sourced directly from
+;; firmware/gateway/README.md.
+;;
+;; =========================================================
+;; OLED STATUS DISPLAY (onboard SSD1306)
+;; =========================================================
+;;
+;;  Line 1: Number of active autonomous stations
+;;  Line 2: Last event — class + timestamp
+;;  Line 3: LoRa RSSI / signal level
+;;  Line 4: Time synchronisation status
+;;
+;; =========================================================
+;; GATEWAY ROLE IN SYSTEM
+;; =========================================================
+;;
+;;  - Receives LoRa 433MHz FHSS metadata packets from all stations
+;;  - Forwards decoded metadata to Rock Pi 4C+ server via USB/UART
+;;  - Receives audio-request commands from server
+;;  - Transmits nRF24L01 audio-pull requests to target station
+;;  - Receives compressed Opus audio (16kHz mono, 32kbps) via nRF24
+;;  - Relays audio stream to server for classification and archiving
+;;
+;; =========================================================

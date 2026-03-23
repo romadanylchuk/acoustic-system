@@ -1,0 +1,322 @@
+;; KiCad-compatible Text Netlist
+;; Autonomous Station — ESP32-S3 (N16R8: 8MB Flash + 8MB PSRAM)
+;; Acoustic Reconnaissance System — Station Node
+;; I2S recording: 32 000 Hz / 16-bit, 4 channels, ring buffer 3.84 MB in PSRAM
+;; Generated from: firmware/station/README.md + docs/acoustic_system_context.md
+;; Serial version target: STM32H743 + ICS-43434 @ 44 100 Hz / 24-bit
+
+(net-list
+  (version 1)
+  (design
+    (source "acoustic-system/hardware/schematics/station_netlist.txt")
+    (date "2026-03-23")
+    (tool "hand-written / KiCad 8 compatible")
+    (comment_1 "Prototype MCU: ESP32-S3-DevKitC-1 N16R8")
+    (comment_2 "Serial MCU target: STM32H743")
+    (comment_3 "I2S sample rate: 32 000 Hz / 16-bit (prototype)")
+    (comment_4 "Serial version: 44 100 Hz / 24-bit with ICS-43434 microphones")
+  )
+
+  ;; =========================================================
+  ;; COMPONENTS
+  ;; =========================================================
+
+  (components
+
+    ;; --- MCU ---
+    (comp (ref U1)
+      (value "ESP32-S3-DevKitC-1 N16R8")
+      (description "Dual-core 240MHz, 8MB Flash, 8MB PSRAM")
+    )
+
+    ;; --- Microphones (I2S Bus 0) ---
+    (comp (ref MIC1)
+      (value "INMP441")
+      (description "I2S MEMS microphone, M1, L/R pin = GND (left channel)")
+    )
+    (comp (ref MIC2)
+      (value "INMP441")
+      (description "I2S MEMS microphone, M2, L/R pin = VCC (right channel)")
+    )
+
+    ;; --- Microphones (I2S Bus 1) ---
+    (comp (ref MIC3)
+      (value "INMP441")
+      (description "I2S MEMS microphone, M3, L/R pin = GND (left channel)")
+    )
+    (comp (ref MIC4)
+      (value "INMP441")
+      (description "I2S MEMS microphone, M4, L/R pin = VCC (right channel)")
+    )
+
+    ;; --- LoRa Radio ---
+    (comp (ref U2)
+      (value "Ra-02 SX1278")
+      (description "LoRa module 433 MHz, FHSS, SPI interface")
+    )
+
+    ;; --- 2.4 GHz Radio ---
+    (comp (ref U3)
+      (value "nRF24L01 PA+LNA")
+      (description "2.4 GHz radio, SPI shared with LoRa, on-demand audio transfer")
+    )
+
+    ;; --- RTC ---
+    (comp (ref U4)
+      (value "DS3231")
+      (description "RTC with TCXO, I2C interface, temperature sensor for sound-speed correction")
+    )
+
+    ;; --- Power ---
+    (comp (ref REG1)
+      (value "3.3V LDO")
+      (description "3.3V power regulator from LiFePO4 (3.2V nominal)")
+    )
+    (comp (ref BAT1)
+      (value "LiFePO4 26650 x2")
+      (description "2x LiFePO4 26650 cells in parallel, 10Ah @ 3.2V = 32Wh")
+    )
+  )
+
+  ;; =========================================================
+  ;; NETS
+  ;; =========================================================
+
+  (nets
+
+    ;; ---------------------------------------------------------
+    ;; POWER RAILS
+    ;; ---------------------------------------------------------
+
+    (net (name "+3V3")
+      (node (ref U1)   (pin VDD))
+      (node (ref MIC1) (pin VDD))
+      (node (ref MIC2) (pin VDD))
+      (node (ref MIC2) (pin LR))       ;; MIC2 L/R=VCC -> right channel
+      (node (ref MIC3) (pin VDD))
+      (node (ref MIC4) (pin VDD))
+      (node (ref MIC4) (pin LR))       ;; MIC4 L/R=VCC -> right channel
+      (node (ref U2)   (pin VCC))
+      (node (ref U3)   (pin VCC))
+      (node (ref U4)   (pin VCC))
+      (node (ref REG1) (pin OUT))
+    )
+
+    (net (name "GND")
+      (node (ref U1)   (pin GND))
+      (node (ref MIC1) (pin GND))
+      (node (ref MIC1) (pin LR))       ;; MIC1 L/R=GND -> left channel
+      (node (ref MIC2) (pin GND))
+      (node (ref MIC3) (pin GND))
+      (node (ref MIC3) (pin LR))       ;; MIC3 L/R=GND -> left channel
+      (node (ref MIC4) (pin GND))
+      (node (ref U2)   (pin GND))
+      (node (ref U3)   (pin GND))
+      (node (ref U4)   (pin GND))
+      (node (ref REG1) (pin GND))
+      (node (ref BAT1) (pin NEG))
+    )
+
+    (net (name "VBAT")
+      (node (ref BAT1) (pin POS))
+      (node (ref REG1) (pin IN))
+    )
+
+    ;; ---------------------------------------------------------
+    ;; I2S BUS 0 — MIC1 (M1) and MIC2 (M2)
+    ;; ESP32-S3: SCK=GPIO14, WS=GPIO15
+    ;; ---------------------------------------------------------
+
+    (net (name "I2S0_SCK")
+      (node (ref U1)   (pin GPIO14))
+      (node (ref MIC1) (pin SCK))
+      (node (ref MIC2) (pin SCK))
+    )
+
+    (net (name "I2S0_WS")
+      (node (ref U1)   (pin GPIO15))
+      (node (ref MIC1) (pin WS))
+      (node (ref MIC2) (pin WS))
+    )
+
+    (net (name "I2S0_DATA_M1")
+      (node (ref U1)   (pin GPIO16))
+      (node (ref MIC1) (pin SD))
+      ;; MIC1: L/R=GND => left channel, drives SD when WS=low
+    )
+
+    (net (name "I2S0_DATA_M2")
+      (node (ref U1)   (pin GPIO17))
+      (node (ref MIC2) (pin SD))
+      ;; MIC2: L/R=VCC => right channel, drives SD when WS=high
+    )
+
+    ;; ---------------------------------------------------------
+    ;; I2S BUS 1 — MIC3 (M3) and MIC4 (M4)
+    ;; ESP32-S3: SCK=GPIO18, WS=GPIO19
+    ;; ---------------------------------------------------------
+
+    (net (name "I2S1_SCK")
+      (node (ref U1)   (pin GPIO18))
+      (node (ref MIC3) (pin SCK))
+      (node (ref MIC4) (pin SCK))
+    )
+
+    (net (name "I2S1_WS")
+      (node (ref U1)   (pin GPIO19))
+      (node (ref MIC3) (pin WS))
+      (node (ref MIC4) (pin WS))
+    )
+
+    (net (name "I2S1_DATA_M3")
+      (node (ref U1)   (pin GPIO20))
+      (node (ref MIC3) (pin SD))
+      ;; MIC3: L/R=GND => left channel
+    )
+
+    (net (name "I2S1_DATA_M4")
+      (node (ref U1)   (pin GPIO21))
+      (node (ref MIC4) (pin SD))
+      ;; MIC4: L/R=VCC => right channel
+    )
+
+    ;; ---------------------------------------------------------
+    ;; SPI BUS (shared) — Ra-02 LoRa + nRF24L01
+    ;; ESP32-S3: MOSI=GPIO11, MISO=GPIO13, SCK=GPIO12
+    ;; Chip selects are separate (LORA_NSS, NRF_CSN)
+    ;; ---------------------------------------------------------
+
+    (net (name "SPI_MOSI")
+      (node (ref U1)  (pin GPIO11))
+      (node (ref U2)  (pin MOSI))
+      (node (ref U3)  (pin MOSI))
+    )
+
+    (net (name "SPI_MISO")
+      (node (ref U1)  (pin GPIO13))
+      (node (ref U2)  (pin MISO))
+      (node (ref U3)  (pin MISO))
+    )
+
+    (net (name "SPI_SCK")
+      (node (ref U1)  (pin GPIO12))
+      (node (ref U2)  (pin SCK))
+      (node (ref U3)  (pin SCK))
+    )
+
+    ;; ---------------------------------------------------------
+    ;; LoRa Ra-02 SX1278 — control signals
+    ;; ---------------------------------------------------------
+
+    (net (name "LORA_NSS")
+      (node (ref U1)  (pin GPIO10))
+      (node (ref U2)  (pin NSS))
+    )
+
+    (net (name "LORA_DIO0")
+      (node (ref U1)  (pin GPIO9))
+      (node (ref U2)  (pin DIO0))
+      ;; DIO0: interrupt line — RxDone / TxDone / CadDone
+    )
+
+    (net (name "LORA_RST")
+      (node (ref U1)  (pin GPIO8))
+      (node (ref U2)  (pin RST))
+    )
+
+    ;; ---------------------------------------------------------
+    ;; nRF24L01 PA+LNA — control signals
+    ;; ---------------------------------------------------------
+
+    (net (name "NRF_CSN")
+      (node (ref U1)  (pin GPIO7))
+      (node (ref U3)  (pin CSN))
+    )
+
+    (net (name "NRF_CE")
+      (node (ref U1)  (pin GPIO6))
+      (node (ref U3)  (pin CE))
+      ;; CE: chip enable — activates RX/TX mode
+    )
+
+    (net (name "NRF_IRQ")
+      (node (ref U1)  (pin GPIO5))
+      (node (ref U3)  (pin IRQ))
+      ;; IRQ: active-low interrupt from nRF24 to MCU
+    )
+
+    ;; ---------------------------------------------------------
+    ;; I2C BUS — DS3231 RTC
+    ;; ESP32-S3: SDA=GPIO3, SCL=GPIO4
+    ;; ---------------------------------------------------------
+
+    (net (name "I2C_SDA")
+      (node (ref U1)  (pin GPIO3))
+      (node (ref U4)  (pin SDA))
+    )
+
+    (net (name "I2C_SCL")
+      (node (ref U1)  (pin GPIO4))
+      (node (ref U4)  (pin SCL))
+    )
+
+  ) ;; end nets
+
+) ;; end net-list
+
+
+;; =========================================================
+;; PIN ASSIGNMENT SUMMARY — ESP32-S3
+;; =========================================================
+;;
+;;  GPIO  | Net Name         | Connected To
+;; -------|------------------|-------------------------------
+;;    3   | I2C_SDA          | DS3231 SDA
+;;    4   | I2C_SCL          | DS3231 SCL
+;;    5   | NRF_IRQ          | nRF24L01 IRQ
+;;    6   | NRF_CE           | nRF24L01 CE
+;;    7   | NRF_CSN          | nRF24L01 CSN
+;;    8   | LORA_RST         | Ra-02 RST
+;;    9   | LORA_DIO0        | Ra-02 DIO0
+;;   10   | LORA_NSS         | Ra-02 NSS
+;;   11   | SPI_MOSI         | Ra-02 MOSI + nRF24L01 MOSI
+;;   12   | SPI_SCK          | Ra-02 SCK  + nRF24L01 SCK
+;;   13   | SPI_MISO         | Ra-02 MISO + nRF24L01 MISO
+;;   14   | I2S0_SCK         | MIC1 SCK, MIC2 SCK
+;;   15   | I2S0_WS          | MIC1 WS,  MIC2 WS
+;;   16   | I2S0_DATA_M1     | MIC1 SD   (L/R=GND, left)
+;;   17   | I2S0_DATA_M2     | MIC2 SD   (L/R=VCC, right)
+;;   18   | I2S1_SCK         | MIC3 SCK, MIC4 SCK
+;;   19   | I2S1_WS          | MIC3 WS,  MIC4 WS
+;;   20   | I2S1_DATA_M3     | MIC3 SD   (L/R=GND, left)
+;;   21   | I2S1_DATA_M4     | MIC4 SD   (L/R=VCC, right)
+;;
+;; =========================================================
+;; MICROPHONE TETRAHEDRAL ARRAY GEOMETRY
+;; =========================================================
+;;
+;;  MIC1 (M1) — top apex of tetrahedron
+;;  MIC2 (M2) — horizontal plane, 0°
+;;  MIC3 (M3) — horizontal plane, 120°
+;;  MIC4 (M4) — horizontal plane, 240°
+;;
+;;  Enables 3D direction-of-arrival: azimuth + elevation
+;;  GCC-PHAT TDOA computed between all mic pairs.
+;;  Temperature from DS3231 used for sound-speed correction
+;;  (approx. 0.6 m/s per degree Celsius).
+;;
+;; =========================================================
+;; RECORDING PARAMETERS
+;; =========================================================
+;;
+;;  Prototype:    32 000 Hz / 16-bit / 4 channels
+;;                Ring buffer: 32000 x 4ch x 2B x 15s = 3.84 MB
+;;                Fits in 8 MB PSRAM (N16R8 module)
+;;                Bandwidth: 16 kHz (covers UAV acoustic signatures)
+;;
+;;  Serial version target (future):
+;;                44 100 Hz / 24-bit / 4 channels
+;;                MCU: STM32H743, Mics: ICS-43434
+;;                Buffer: ~7.9 MB — requires external SDRAM or <=10s buffer
+;;
+;; =========================================================
