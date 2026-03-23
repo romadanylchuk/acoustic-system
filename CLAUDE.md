@@ -99,7 +99,7 @@ openscad -o output.stl hardware/station_battery_mount.scad
 
 ## Key Technical Constraints
 
-- **PSRAM mandatory:** Ring buffer (10-15s × 4ch × 16kHz × 32bit ≈ 38MB) requires the N16R8 module
+- **PSRAM mandatory:** Ring buffer (15s × 4ch × 32kHz × 16bit = 3.84MB) fits in 8MB PSRAM of N16R8 module. Recording parameters: **32 000 Hz / 16-bit** (bandwidth 16 kHz, covers UAV acoustic signatures). Serial production target: 44 100 Hz / 24-bit with ICS-43434 mics (requires external SDRAM or ≤10s buffer).
 - **Tetrahedral mic geometry:** 1 mic on top, 3 at 120° horizontal — enables 3D bearing (azimuth + elevation)
 - **Sound speed correction:** Temperature from DS3231 must be factored into TDOA→distance conversion (~0.6 m/s per °C)
 - **FHSS on LoRa:** Frequency hopping pattern must be pre-shared and synchronized across all nodes
