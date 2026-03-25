@@ -88,13 +88,16 @@ python main.py
 
 ## Hardware Models
 
-OpenSCAD parametric designs in `hardware/`:
-- `station_battery_mount.scad` — LiFePO4 26650×2 compartment
-- `station_electronics_compartment.scad` — PCB enclosure (IP65)
-- `station_mic_lid.scad` — Microphone cover
+**3D modeling toolchain: build123d (Python)** — перехід з OpenSCAD.
+Viewer: `ocp-vscode` розширення для VS Code (`show(obj)` в коді).
+
+Моделі в `hardware/` (будуть переписані з нуля на build123d):
+- `station_battery_mount.scad` — LiFePO4 26650×2 compartment (legacy)
+- `station_electronics_compartment.scad` — PCB enclosure IP65 (legacy)
+- `station_mic_lid.scad` — Microphone cover (legacy)
 
 ```bash
-openscad -o output.stl hardware/station_battery_mount.scad
+pip install build123d ocp-vscode
 ```
 
 ## Key Technical Constraints
