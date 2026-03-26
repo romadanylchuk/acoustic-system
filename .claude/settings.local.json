@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"/c/Program Files/OpenSCAD/openscad.exe\" --render --colorscheme=Cornfield --imgsize=1200,900 --camera=0,0,20,60,0,30,280 -o D:/home/acoustic-system/hardware/station_mic_lid.png D:/home/acoustic-system/hardware/station_mic_lid.scad 2>&1)",
+      "Bash(\"/c/Program Files/OpenSCAD/openscad.exe\" --render --colorscheme=Cornfield --imgsize=1200,900 --camera=0,0,-20,60,0,-150,280 -o D:/home/acoustic-system/hardware/station_mic_lid_bottom.png D:/home/acoustic-system/hardware/station_mic_lid.scad 2>&1 | tail -5)",
+      "Bash(\"/c/Program Files/OpenSCAD/openscad.exe\" --render --colorscheme=Cornfield --imgsize=1200,900 --camera=0,0,16,0,180,0,220 -o D:/home/acoustic-system/hardware/station_mic_lid_bottom.png D:/home/acoustic-system/hardware/station_mic_lid.scad 2>&1 | tail -3)"
+    ]
+  }
+}

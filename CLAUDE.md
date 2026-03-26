@@ -18,27 +18,29 @@ Server (Rock Pi 4C+)
         ↕ LoRa 433MHz (metadata/control) + nRF24 2.4GHz (on-demand audio)
 Gateway (TTGO LoRa32)
         ↕
-Autonomous Stations (ESP32-S3, up to 500m apart, 3-5km total radius)
-  └── 4× INMP441 MEMS microphones, LoRa + nRF24 radios, LiFePO4 battery
+Autonomous Stations (ESP32-S3 N16R8, up to 500m apart, 3-5km total radius)
+  └── 4× INMP441 MEMS microphones, LoRa + nRF24 radios, Li-Ion 21700 (2S2P)
 ```
 
 ### Dual-Radio Design
 
 | Radio | Frequency | Always On? | Purpose |
 |-------|-----------|-----------|---------|
-| LoRa Ra-02 SX1278 | 433 MHz FHSS | Yes | Metadata packets, sync, control |
+| LoRa Ra-02 SX1278 | 433 MHz FHSS | Yes | Metadata packets, sync, control (AES-128-CCM encrypted) |
 | nRF24L01 PA+LNA | 2.4 GHz | No (on-demand) | Audio fragment retrieval (Opus 32kbps, ~15-20s) |
+
+**Shared SPI bus:** LoRa + nRF24 share MOSI/MISO/SCK with separate CS. Firmware mutex required; LoRa has priority over nRF24.
 
 ### Station Operation
 - **Idle:** Analog comparator triggers on sound; ~56mW draw
-- **Event:** Records 4-channel I2S to PSRAM ring buffer (10-15s pre+post trigger), runs GCC-PHAT TDOA, classifies, sends ~30-byte LoRa packet
+- **Event:** Records 4-channel I2S to PSRAM ring buffer (10-15s pre+post trigger, ~3.84MB), runs GCC-PHAT TDOA (6 pairs), classifies, sends ~50-byte LoRa packet (AES-128-CCM)
 - **Audio request:** Server pulls audio via nRF24 when needed
 
 ### Time Synchronization (GPS-free)
 No GPS — vulnerable to EW jamming. Instead: TCXO ±0.5ppm + acoustic beacon calibration + LoRa mesh drift correction. Accuracy ~1-5ms (yields ~0.5m position error/hour of drift).
 
-### LoRa Packet (~30 bytes)
-Station ID (2B) | Timestamp µs (8B) | TDOA pairs (16B) | SNR×4 (4B) | Event class (1B) | Confidence (1B) | Battery % (1B) | Temperature (1B)
+### LoRa Packet (~50 bytes, AES-128-CCM)
+Station ID (2B) | Counter (4B) | [encrypted: Timestamp µs (8B) | TDOA 6 pairs (24B) | SNR×4 (4B) | Event class (1B) | Confidence (1B) | Battery % (1B) | Temperature (1B)] | MIC (4B)
 
 ## Development Stages
 
@@ -69,13 +71,15 @@ idf.py flash -p COM<N>   # specific port on Windows
 - nRF24 SPI (shared bus): CSN=7, CE=6, IRQ=5
 - DS3231 I2C: SDA=3, SCL=4
 
-## Firmware (TTGO Gateway)
+## Firmware (TTGO LoRa32 — Communication Module)
+
+TTGO LoRa32 is a radio bridge between autonomous stations and Rock Pi 4C+. It handles LoRa reception and nRF24 audio relay only. USB microphone connects directly to Rock Pi.
 
 **Toolchain:** ESP-IDF v5.x or Arduino
 **Key pin assignments (gateway):**
 - nRF24: MOSI=23, MISO=19, SCK=18, CSN=5, CE=17, IRQ=16
 
-## Server (Rock Pi 4C+ / Raspberry Pi 4)
+## Server (Rock Pi 4C+)
 
 **Language:** Python 3
 **Key dependencies:** `numpy`, `scipy`, `torch` or `tflite-runtime`, `pyserial`, `folium`
@@ -89,7 +93,7 @@ python main.py
 ## Hardware Models
 
 OpenSCAD parametric designs in `hardware/`:
-- `station_battery_mount.scad` — LiFePO4 26650×2 compartment
+- `station_battery_mount.scad` — Li-Ion 21700×4 (2S2P) compartment
 - `station_electronics_compartment.scad` — PCB enclosure (IP65)
 - `station_mic_lid.scad` — Microphone cover
 
@@ -99,8 +103,10 @@ openscad -o output.stl hardware/station_battery_mount.scad
 
 ## Key Technical Constraints
 
-- **PSRAM mandatory:** Ring buffer (10-15s × 4ch × 16kHz × 32bit ≈ 38MB) requires the N16R8 module
-- **Tetrahedral mic geometry:** 1 mic on top, 3 at 120° horizontal — enables 3D bearing (azimuth + elevation)
+- **PSRAM mandatory:** Ring buffer (15s × 4ch × 16kHz × 32bit = 3.84MB) fits comfortably in 8MB PSRAM of N16R8
+- **Tetrahedral mic geometry:** 1 mic on top, 3 at 120° with 35° tilt from vertical (true tetrahedron) — enables 3D bearing (azimuth + elevation)
 - **Sound speed correction:** Temperature from DS3231 must be factored into TDOA→distance conversion (~0.6 m/s per °C)
 - **FHSS on LoRa:** Frequency hopping pattern must be pre-shared and synchronized across all nodes
+- **AES-128-CCM encryption:** All LoRa packets encrypted + authenticated with pre-shared 128-bit key
+- **SPI bus sharing:** LoRa and nRF24 share SPI bus — firmware mutex required, LoRa priority
 - **Opus codec:** Audio compressed to 32kbps mono 16kHz before nRF24 transmission
