@@ -92,19 +92,22 @@ python main.py
 
 ## Hardware Models
 
-OpenSCAD parametric designs in `hardware/`:
+**3D modeling toolchain: build123d (Python)** — перехід з OpenSCAD.
+Viewer: `ocp-vscode` розширення для VS Code (`show(obj)` в коді).
+
+Моделі в `hardware/` (будуть переписані з нуля на build123d):
 - `station_battery_mount.scad` — Li-Ion 21700×4 (2S2P) compartment
 - `station_electronics_compartment.scad` — PCB enclosure (IP65)
 - `station_mic_lid.scad` — Microphone cover
 
 ```bash
-openscad -o output.stl hardware/station_battery_mount.scad
+pip install build123d ocp-vscode
 ```
 
 ## Key Technical Constraints
 
-- **PSRAM mandatory:** Ring buffer (15s × 4ch × 16kHz × 32bit = 3.84MB) fits comfortably in 8MB PSRAM of N16R8
-- **Tetrahedral mic geometry:** 1 mic on top, 3 at 120° with 35° tilt from vertical (true tetrahedron) — enables 3D bearing (azimuth + elevation)
+- **PSRAM mandatory:** Ring buffer (15s × 4ch × 32kHz × 16bit = 3.84MB) fits in 8MB PSRAM of N16R8 module. Recording parameters: **32 000 Hz / 16-bit** (bandwidth 16 kHz, covers UAV acoustic signatures). Serial production target: 44 100 Hz / 24-bit with ICS-43434 mics (requires external SDRAM or ≤10s buffer).
+- **Tetrahedral mic geometry:** 1 mic on top, 3 at 120° horizontal — enables 3D bearing (azimuth + elevation)
 - **Sound speed correction:** Temperature from DS3231 must be factored into TDOA→distance conversion (~0.6 m/s per °C)
 - **FHSS on LoRa:** Frequency hopping pattern must be pre-shared and synchronized across all nodes
 - **AES-128-CCM encryption:** All LoRa packets encrypted + authenticated with pre-shared 128-bit key
