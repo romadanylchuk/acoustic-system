@@ -14,10 +14,10 @@ Documentation is primarily in Ukrainian. See `docs/acoustic_system_context.md` f
 
 ```
 Server (Rock Pi 4C+)
-  └── Triangulation, neural-net classification, map UI, USB microphone (station 0)
+  ├── Triangulation, neural-net classification, map UI
+  ├── Station 0 (ESP32-S3 N16R8) — 4× INMP441, USB CDC → Rock Pi
+  └── Gateway (TTGO LoRa32) — LoRa + nRF24 radio bridge → Rock Pi
         ↕ LoRa 433MHz (metadata/control) + nRF24 2.4GHz (on-demand audio)
-Gateway (TTGO LoRa32)
-        ↕
 Autonomous Stations (ESP32-S3 N16R8, up to 500m apart, 3-5km total radius)
   └── 4× INMP441 MEMS microphones, LoRa + nRF24 radios, Li-Ion 21700 (2S2P)
 ```
@@ -46,7 +46,7 @@ Station ID (2B) | Counter (4B) | [encrypted: Timestamp µs (8B) | TDOA 6 pairs (
 
 | Stage | Goal | Status |
 |-------|------|--------|
-| 1 | Single node: 4-channel I2S recording + GCC-PHAT TDOA on bench | In progress |
+| 1 | Single node: 4-channel I2S recording + GCC-PHAT TDOA on bench | Pending |
 | 2 | LoRa metadata link + nRF24 audio protocol with gateway | Pending |
 | 3 | Two nodes in field: real triangulation accuracy tests | Pending |
 | 4 | Server: map UI, neural-net classification, full integration | Pending |
@@ -107,7 +107,7 @@ pip install build123d ocp-vscode
 ## Key Technical Constraints
 
 - **PSRAM mandatory:** Ring buffer (15s × 4ch × 32kHz × 16bit = 3.84MB) fits in 8MB PSRAM of N16R8 module. Recording parameters: **32 000 Hz / 16-bit** (bandwidth 16 kHz, covers UAV acoustic signatures). Serial production target: 44 100 Hz / 24-bit with ICS-43434 mics (requires external SDRAM or ≤10s buffer).
-- **Tetrahedral mic geometry:** 1 mic on top, 3 at 120° horizontal — enables 3D bearing (azimuth + elevation)
+- **Tetrahedral mic geometry:** 1 mic on top, 3 at 120° with 35° tilt from vertical (≈35.26° — true tetrahedron) — enables 3D bearing (azimuth + elevation)
 - **Sound speed correction:** Temperature from DS3231 must be factored into TDOA→distance conversion (~0.6 m/s per °C)
 - **FHSS on LoRa:** Frequency hopping pattern must be pre-shared and synchronized across all nodes
 - **AES-128-CCM encryption:** All LoRa packets encrypted + authenticated with pre-shared 128-bit key
