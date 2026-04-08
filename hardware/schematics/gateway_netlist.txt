@@ -81,22 +81,23 @@
 
     ;; ---------------------------------------------------------
     ;; SPI BUS — external nRF24L01 PA+LNA
-    ;; TTGO ESP32: MOSI=GPIO23, MISO=GPIO19, SCK=GPIO18
-    ;; Note: these are the standard VSPI pins on ESP32
+    ;; Uses HSPI bus (GPIO13/12/15) — free from LoRa conflicts.
+    ;; TTGO T3 v1.6 LoRa uses: MOSI=27, MISO=19, SCK=5, NSS=18, RST=23
+    ;; nRF24 is placed on separate HSPI to avoid conflicts.
     ;; ---------------------------------------------------------
 
-    (net (name "SPI_MOSI")
-      (node (ref U1)  (pin GPIO23))
+    (net (name "NRF_SPI_MOSI")
+      (node (ref U1)  (pin GPIO13))
       (node (ref U3)  (pin MOSI))
     )
 
-    (net (name "SPI_MISO")
-      (node (ref U1)  (pin GPIO19))
+    (net (name "NRF_SPI_MISO")
+      (node (ref U1)  (pin GPIO12))
       (node (ref U3)  (pin MISO))
     )
 
-    (net (name "SPI_SCK")
-      (node (ref U1)  (pin GPIO18))
+    (net (name "NRF_SPI_SCK")
+      (node (ref U1)  (pin GPIO15))
       (node (ref U3)  (pin SCK))
     )
 
@@ -105,7 +106,7 @@
     ;; ---------------------------------------------------------
 
     (net (name "NRF_CSN")
-      (node (ref U1)  (pin GPIO5))
+      (node (ref U1)  (pin GPIO2))
       (node (ref U3)  (pin CSN))
     )
 
@@ -202,25 +203,23 @@
 ;;
 ;;  GPIO  | Net Name                  | Connected To
 ;; -------|---------------------------|----------------------------
+;;   2    | NRF_CSN                   | nRF24L01 CSN
 ;;   5    | LORA_SPI_SCK_INTERNAL     | SX1278 SCK  (onboard)
+;;  12    | NRF_SPI_MISO              | nRF24L01 MISO  (HSPI)
+;;  13    | NRF_SPI_MOSI              | nRF24L01 MOSI  (HSPI)
+;;  15    | NRF_SPI_SCK               | nRF24L01 SCK   (HSPI)
 ;;  16    | NRF_IRQ                   | nRF24L01 IRQ
 ;;  17    | NRF_CE                    | nRF24L01 CE
 ;;  18    | LORA_NSS_INTERNAL         | SX1278 NSS  (onboard)
-;;  19    | SPI_MISO / LORA_MISO      | nRF24L01 MISO (+ SX1278 MISO on some revisions)
+;;  19    | LORA_SPI_MISO_INTERNAL    | SX1278 MISO (onboard)
 ;;  21    | I2C_SDA_INTERNAL          | SSD1306 SDA (onboard)
 ;;  22    | I2C_SCL_INTERNAL          | SSD1306 SCL (onboard)
-;;  23    | SPI_MOSI / LORA_RST       | nRF24L01 MOSI; SX1278 RST on T3v1.6
+;;  23    | LORA_RST_INTERNAL         | SX1278 RST  (onboard)
 ;;  26    | LORA_DIO0_INTERNAL        | SX1278 DIO0 (onboard)
 ;;  27    | LORA_SPI_MOSI_INTERNAL    | SX1278 MOSI (onboard)
-;;   5    | NRF_CSN                   | nRF24L01 CSN
-;;  18    | SPI_SCK                   | nRF24L01 SCK
-;;  23    | SPI_MOSI                  | nRF24L01 MOSI
 ;;
-;; NOTE: GPIO pin conflicts between nRF24 SPI and onboard LoRa SPI
-;; may arise depending on TTGO board revision. Verify against the
-;; exact board schematic (T3 v1.6 vs v2.0 etc.) before PCB design.
-;; The nRF24 pin assignments in this file are sourced directly from
-;; firmware/gateway/README.md.
+;; nRF24 placed on HSPI (GPIO12/13/15) — no conflicts with onboard LoRa SPI.
+;; Firmware must initialise two SPI buses: VSPI for LoRa (internal), HSPI for nRF24.
 ;;
 ;; =========================================================
 ;; OLED STATUS DISPLAY (onboard SSD1306)

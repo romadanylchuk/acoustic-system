@@ -69,12 +69,12 @@
 
     ;; --- Power ---
     (comp (ref REG1)
-      (value "3.3V LDO")
-      (description "3.3V power regulator from LiFePO4 (3.2V nominal)")
+      (value "Mini360 DC-DC buck")
+      (description "DC-DC buck converter 7.4V->3.3V, ~90% efficiency")
     )
     (comp (ref BAT1)
-      (value "LiFePO4 26650 x2")
-      (description "2x LiFePO4 26650 cells in parallel, 10Ah @ 3.2V = 32Wh")
+      (value "Li-Ion 21700 x4 (2S2P)")
+      (description "4x Li-Ion 21700 cells: 2S2P, 7.4V nominal / 8.4V charged / 6.0V cutoff, ~9Ah, ~67Wh. BMS 2S required.")
     )
   )
 
@@ -295,11 +295,12 @@
 ;; MICROPHONE TETRAHEDRAL ARRAY GEOMETRY
 ;; =========================================================
 ;;
-;;  MIC1 (M1) — top apex of tetrahedron
-;;  MIC2 (M2) — horizontal plane, 0°
-;;  MIC3 (M3) — horizontal plane, 120°
-;;  MIC4 (M4) — horizontal plane, 240°
+;;  MIC1 (M1) — top apex of tetrahedron (vertical, pointing up)
+;;  MIC2 (M2) — 35° tilt from vertical, azimuth 0°
+;;  MIC3 (M3) — 35° tilt from vertical, azimuth 120°
+;;  MIC4 (M4) — 35° tilt from vertical, azimuth 240°
 ;;
+;;  35.26° tilt = true regular tetrahedron geometry
 ;;  Enables 3D direction-of-arrival: azimuth + elevation
 ;;  GCC-PHAT TDOA computed between all mic pairs.
 ;;  Temperature from DS3231 used for sound-speed correction
