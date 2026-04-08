@@ -90,15 +90,39 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## Project Structure Convention
+
+Each subsystem (station, gateway, server) gets its own subfolder within each domain directory. Always follow this pattern when creating new artifacts:
+
+```
+firmware/
+  station/          # ESP-IDF project for autonomous station
+  gateway/          # ESP-IDF/Arduino project for TTGO LoRa32
+  server/           # Python server for Rock Pi 4C+
+
+hardware/
+  schematics/
+    station/        # KiCad project + netlist + generator
+    gateway/        # KiCad project + netlist + generator
+  models/
+    station/        # build123d 3D models (.py) for station enclosure
+    gateway/        # build123d 3D models (.py) for gateway enclosure
+
+server/             # Server application code
+
+docs/               # Shared documentation
+```
+
+**Rules:**
+- Never place project files directly in a domain root — always use a subsystem subfolder
+- KiCad projects: `.kicad_pro` + `.kicad_sch` + netlist `.txt` + Python generator script, all in one subfolder
+- 3D models: build123d Python scripts (`.py`), one subfolder per subsystem
+- Firmware: one ESP-IDF/Arduino project per subfolder
+
 ## Hardware Models
 
-**3D modeling toolchain: build123d (Python)** — перехід з OpenSCAD.
+**3D modeling toolchain: build123d (Python)**
 Viewer: `ocp-vscode` розширення для VS Code (`show(obj)` в коді).
-
-Моделі в `hardware/` (будуть переписані з нуля на build123d):
-- `station_battery_mount.scad` — Li-Ion 21700×4 (2S2P) compartment
-- `station_electronics_compartment.scad` — PCB enclosure (IP65)
-- `station_mic_lid.scad` — Microphone cover
 
 ```bash
 pip install build123d ocp-vscode

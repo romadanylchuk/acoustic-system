@@ -1,0 +1,7 @@
+# KiCad local/temporary files
+station-backups/
+*.kicad_prl
+~*.lck
+
+# VS Code local history
+.history/
