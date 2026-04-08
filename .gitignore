@@ -1,0 +1,36 @@
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# ESP-IDF build artifacts
+build/
+sdkconfig.old
+managed_components/
+
+# KiCad (global)
+*-backups/
+*.kicad_prl
+~*.lck
+fp-info-cache
+
+# VS Code local history
+.history/
+
+# Claude Code
+.claude/settings.local.json
