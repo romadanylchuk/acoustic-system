@@ -1,4 +1,4 @@
-<title>До неділі 14:30</title>
+<title>До п'ятниці 14:30</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=Unbounded:wght@400;700;900&display=swap">
@@ -246,10 +246,10 @@
 
 <main>
   <p class="eyebrow">зворотний відлік</p>
-  <h1>До неділі, <span class="accent">14:30</span></h1>
+  <h1>До п'ятниці, <span class="accent">14:30</span></h1>
   <p class="target" id="target">…</p>
 
-  <div class="party-line">Уже неділя, 14:30! 🎉</div>
+  <div class="party-line">Уже п'ятниця, 14:30! 🎉</div>
 
   <div class="grid" id="grid" role="timer" aria-live="off">
     <div class="cell cell--days">
@@ -272,13 +272,13 @@
 
   <div class="week">
     <div class="week-head">
-      <span>тиждень</span>
+      <span>від 26 серпня</span>
       <span id="pct">0%</span>
     </div>
     <div class="track"><div class="fill" id="fill"></div></div>
   </div>
 
-  <p class="note">Час рахується за годинником твого пристрою. Щонеділі о 14:30 лічильник святкує й починає новий відлік.</p>
+  <p class="note">Час рахується за годинником твого пристрою. Коли стрілки дійдуть до нуля — буде конфеті.</p>
 </main>
 
 <script>
@@ -301,12 +301,9 @@
     return forms[2];
   }
 
-  function sundayAt1430(from) {
-    var t = new Date(from);
-    t.setHours(14, 30, 0, 0);
-    t.setDate(t.getDate() + ((7 - t.getDay()) % 7));
-    return t;
-  }
+  // Friday, 28 August 2026, 14:30 in the viewer's local time.
+  var TARGET = new Date(2026, 7, 28, 14, 30, 0, 0);
+  var START  = new Date(2026, 7, 26, 0, 0, 0, 0);
 
   function setPart(key, value, word) {
     var val = document.querySelector('[data-val="' + key + '"]');
@@ -327,19 +324,13 @@
 
   function render() {
     var now = new Date();
-    var target = sundayAt1430(now);
-    var diff = target - now;
+    var diff = TARGET - now;
 
-    // Sunday, within five minutes past 14:30 — celebrate.
-    if (diff <= 0 && diff > -5 * 60 * 1000) {
+    if (diff <= 0) {
       document.body.classList.add("party");
-      document.title = "Неділя 14:30 🎉";
+      document.title = "П'ятниця 14:30 🎉";
       if (!partyShown) { partyShown = true; burst(); }
       return;
-    }
-    if (diff <= 0) {
-      target = new Date(target.getTime() + 7 * 24 * 3600 * 1000);
-      diff = target - now;
     }
     document.body.classList.remove("party");
     partyShown = false;
@@ -357,16 +348,18 @@
 
     var dateText = new Intl.DateTimeFormat("uk-UA", {
       weekday: "long", day: "numeric", month: "long"
-    }).format(target);
+    }).format(TARGET);
     document.getElementById("target").innerHTML =
       "чекаємо на <b>" + dateText + "</b>, о <b>14:30</b>";
 
-    var span = 7 * 24 * 3600 * 1000;
+    var span = TARGET - START;
     var pct = Math.min(100, Math.max(0, (1 - diff / span) * 100));
     document.getElementById("fill").style.width = pct.toFixed(1) + "%";
     document.getElementById("pct").textContent = Math.round(pct) + "% позаду";
 
-    document.title = d + " " + plural(d, PLURALS.d) + " до неділі";
+    document.title = (d > 0)
+      ? d + " " + plural(d, PLURALS.d) + " до п'ятниці"
+      : h + " " + plural(h, PLURALS.h) + " до п'ятниці";
   }
 
   // Confetti
