@@ -1,0 +1,428 @@
+<title>До неділі 14:30</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;700&family=Unbounded:wght@400;700;900&display=swap">
+<style>
+  :root {
+    --paper:   #E8ECEA;
+    --surface: #F4F7F5;
+    --ink:     #16191C;
+    --ink-soft:#5C6A69;
+    --line:    #C7D1CD;
+    --pink:    #E8317F;
+    --aqua:    #00949F;
+    --sun:     #F0A600;
+    --ghost-blend: multiply;
+    --ghost-alpha: .55;
+    --grain-alpha: .30;
+    --grain-blend: multiply;
+
+    --step--1: clamp(.72rem, .68rem + .2vw, .82rem);
+    --step-0:  clamp(.95rem, .9rem + .25vw, 1.05rem);
+    --step-1:  clamp(1.3rem, 1.1rem + 1vw, 1.9rem);
+    --step-2:  clamp(2.1rem, 1.5rem + 3vw, 3.6rem);
+    --digit:   clamp(3.2rem, 1.4rem + 9vw, 7rem);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #12161A;
+      --surface: #1B2229;
+      --ink:     #EEF3F1;
+      --ink-soft:#93A3A5;
+      --line:    #2E3941;
+      --pink:    #FF6FB5;
+      --aqua:    #35CFDE;
+      --sun:     #FFD166;
+      --ghost-blend: screen;
+      --ghost-alpha: .45;
+      --grain-alpha: .16;
+      --grain-blend: screen;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:   #12161A;
+    --surface: #1B2229;
+    --ink:     #EEF3F1;
+    --ink-soft:#93A3A5;
+    --line:    #2E3941;
+    --pink:    #FF6FB5;
+    --aqua:    #35CFDE;
+    --sun:     #FFD166;
+    --ghost-blend: screen;
+    --ghost-alpha: .45;
+    --grain-alpha: .16;
+    --grain-blend: screen;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Onest", ui-sans-serif, system-ui, sans-serif;
+    font-size: var(--step-0);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  .grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 3;
+    opacity: var(--grain-alpha);
+    mix-blend-mode: var(--grain-blend);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1.1rem, 4vw, 2.5rem) 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.5rem, 4vw, 2.75rem);
+  }
+
+  .eyebrow {
+    margin: 0;
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--aqua);
+  }
+
+  h1 {
+    margin: 0;
+    font-family: "Unbounded", "Onest", sans-serif;
+    font-weight: 900;
+    font-size: var(--step-2);
+    line-height: .98;
+    letter-spacing: -.02em;
+    text-wrap: balance;
+  }
+  h1 .accent { color: var(--pink); }
+
+  .target {
+    margin: 0;
+    font-size: var(--step-1);
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+  .target b {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: clamp(.5rem, 1.4vw, .9rem);
+  }
+  @media (max-width: 620px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .cell {
+    --fill: var(--aqua);
+    position: relative;
+    background: var(--fill);
+    color: var(--paper);
+    border-radius: 4px;
+    padding: clamp(.7rem, 2vw, 1.2rem) clamp(.5rem, 1.5vw, 1rem) clamp(.6rem, 1.5vw, 1rem);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .2rem;
+    overflow: hidden;
+  }
+  .cell--days  { --fill: var(--pink); }
+  .cell--hours { --fill: var(--aqua); }
+  .cell--mins  { --fill: var(--sun); color: var(--ink); }
+  .cell--secs  { --fill: var(--ink); }
+
+  .num {
+    position: relative;
+    display: block;
+    font-family: "Unbounded", "Onest", sans-serif;
+    font-weight: 700;
+    font-size: var(--digit);
+    line-height: 1;
+    letter-spacing: -.04em;
+    font-variant-numeric: tabular-nums;
+  }
+  .num .ghost {
+    position: absolute;
+    inset: 0;
+    transform: translate(4px, 5px);
+    color: var(--sun);
+    mix-blend-mode: var(--ghost-blend);
+    opacity: var(--ghost-alpha);
+  }
+  .cell--mins .num .ghost { color: var(--pink); }
+  .cell--secs .num .ghost { color: var(--aqua); }
+
+  .label {
+    font-size: var(--step--1);
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    opacity: .85;
+  }
+
+  .week { display: flex; flex-direction: column; gap: .6rem; }
+  .week-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: var(--step--1);
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    font-weight: 700;
+  }
+  .track {
+    position: relative;
+    height: 14px;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .fill {
+    height: 100%;
+    width: 0;
+    background: repeating-linear-gradient(
+      135deg, var(--aqua) 0 8px, color-mix(in srgb, var(--aqua) 70%, var(--paper)) 8px 16px);
+    transition: width .6s ease;
+  }
+  @media (prefers-reduced-motion: reduce) { .fill { transition: none; } }
+
+  .note {
+    margin: 0;
+    font-size: var(--step--1);
+    color: var(--ink-soft);
+    max-width: 44ch;
+  }
+
+  .party-line {
+    display: none;
+    font-family: "Unbounded", "Onest", sans-serif;
+    font-weight: 900;
+    font-size: var(--step-2);
+    line-height: 1.05;
+    color: var(--pink);
+  }
+  body.party .grid,
+  body.party .week { display: none; }
+  body.party .party-line { display: block; }
+
+  #confetti {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .tick { animation: tick .45s ease-out; }
+  @keyframes tick {
+    0%   { transform: translateY(-6%); opacity: .5; }
+    100% { transform: translateY(0);    opacity: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tick { animation: none; }
+  }
+</style>
+
+<div class="grain" aria-hidden="true"></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<main>
+  <p class="eyebrow">зворотний відлік</p>
+  <h1>До неділі, <span class="accent">14:30</span></h1>
+  <p class="target" id="target">…</p>
+
+  <div class="party-line">Уже неділя, 14:30! 🎉</div>
+
+  <div class="grid" id="grid" role="timer" aria-live="off">
+    <div class="cell cell--days">
+      <span class="num"><span class="ghost" data-ghost="d">0</span><span data-val="d">0</span></span>
+      <span class="label" data-label="d">днів</span>
+    </div>
+    <div class="cell cell--hours">
+      <span class="num"><span class="ghost" data-ghost="h">00</span><span data-val="h">00</span></span>
+      <span class="label" data-label="h">годин</span>
+    </div>
+    <div class="cell cell--mins">
+      <span class="num"><span class="ghost" data-ghost="m">00</span><span data-val="m">00</span></span>
+      <span class="label" data-label="m">хвилин</span>
+    </div>
+    <div class="cell cell--secs">
+      <span class="num"><span class="ghost" data-ghost="s">00</span><span data-val="s">00</span></span>
+      <span class="label" data-label="s">секунд</span>
+    </div>
+  </div>
+
+  <div class="week">
+    <div class="week-head">
+      <span>тиждень</span>
+      <span id="pct">0%</span>
+    </div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+  </div>
+
+  <p class="note">Час рахується за годинником твого пристрою. Щонеділі о 14:30 лічильник святкує й починає новий відлік.</p>
+</main>
+
+<script>
+(function () {
+  var PLURALS = {
+    d: ["день", "дні", "днів"],
+    h: ["година", "години", "годин"],
+    m: ["хвилина", "хвилини", "хвилин"],
+    s: ["секунда", "секунди", "секунд"]
+  };
+  var COLORS = ["#E8317F", "#00949F", "#F0A600", "#FF6FB5", "#35CFDE"];
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var last = {};
+  var partyShown = false;
+
+  function plural(n, forms) {
+    var n10 = n % 10, n100 = n % 100;
+    if (n10 === 1 && n100 !== 11) return forms[0];
+    if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return forms[1];
+    return forms[2];
+  }
+
+  function sundayAt1430(from) {
+    var t = new Date(from);
+    t.setHours(14, 30, 0, 0);
+    t.setDate(t.getDate() + ((7 - t.getDay()) % 7));
+    return t;
+  }
+
+  function setPart(key, value, word) {
+    var val = document.querySelector('[data-val="' + key + '"]');
+    var ghost = document.querySelector('[data-ghost="' + key + '"]');
+    var label = document.querySelector('[data-label="' + key + '"]');
+    if (last[key] !== value) {
+      val.textContent = value;
+      ghost.textContent = value;
+      label.textContent = word;
+      last[key] = value;
+      if (!reduced) {
+        val.classList.remove("tick");
+        void val.offsetWidth;
+        val.classList.add("tick");
+      }
+    }
+  }
+
+  function render() {
+    var now = new Date();
+    var target = sundayAt1430(now);
+    var diff = target - now;
+
+    // Sunday, within five minutes past 14:30 — celebrate.
+    if (diff <= 0 && diff > -5 * 60 * 1000) {
+      document.body.classList.add("party");
+      document.title = "Неділя 14:30 🎉";
+      if (!partyShown) { partyShown = true; burst(); }
+      return;
+    }
+    if (diff <= 0) {
+      target = new Date(target.getTime() + 7 * 24 * 3600 * 1000);
+      diff = target - now;
+    }
+    document.body.classList.remove("party");
+    partyShown = false;
+
+    var total = Math.floor(diff / 1000);
+    var d = Math.floor(total / 86400);
+    var h = Math.floor(total % 86400 / 3600);
+    var m = Math.floor(total % 3600 / 60);
+    var s = total % 60;
+
+    setPart("d", String(d), plural(d, PLURALS.d));
+    setPart("h", String(h).padStart(2, "0"), plural(h, PLURALS.h));
+    setPart("m", String(m).padStart(2, "0"), plural(m, PLURALS.m));
+    setPart("s", String(s).padStart(2, "0"), plural(s, PLURALS.s));
+
+    var dateText = new Intl.DateTimeFormat("uk-UA", {
+      weekday: "long", day: "numeric", month: "long"
+    }).format(target);
+    document.getElementById("target").innerHTML =
+      "чекаємо на <b>" + dateText + "</b>, о <b>14:30</b>";
+
+    var span = 7 * 24 * 3600 * 1000;
+    var pct = Math.min(100, Math.max(0, (1 - diff / span) * 100));
+    document.getElementById("fill").style.width = pct.toFixed(1) + "%";
+    document.getElementById("pct").textContent = Math.round(pct) + "% позаду";
+
+    document.title = d + " " + plural(d, PLURALS.d) + " до неділі";
+  }
+
+  // Confetti
+  var canvas = document.getElementById("confetti");
+  var ctx = canvas.getContext("2d");
+  var bits = [];
+  var running = false;
+
+  function resize() {
+    var r = window.devicePixelRatio || 1;
+    canvas.width = window.innerWidth * r;
+    canvas.height = window.innerHeight * r;
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+  }
+  window.addEventListener("resize", resize);
+  resize();
+
+  function burst() {
+    if (reduced) return;
+    for (var i = 0; i < 140; i++) {
+      bits.push({
+        x: Math.random() * window.innerWidth,
+        y: -20 - Math.random() * window.innerHeight * .5,
+        vx: (Math.random() - .5) * 1.6,
+        vy: 2 + Math.random() * 3.2,
+        w: 6 + Math.random() * 7,
+        h: 3 + Math.random() * 5,
+        a: Math.random() * Math.PI,
+        va: (Math.random() - .5) * .22,
+        c: COLORS[i % COLORS.length]
+      });
+    }
+    if (!running) { running = true; requestAnimationFrame(fall); }
+  }
+
+  function fall() {
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    for (var i = bits.length - 1; i >= 0; i--) {
+      var b = bits[i];
+      b.x += b.vx; b.y += b.vy; b.a += b.va; b.vy += .02;
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.a);
+      ctx.fillStyle = b.c;
+      ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h);
+      ctx.restore();
+      if (b.y > window.innerHeight + 40) bits.splice(i, 1);
+    }
+    if (bits.length) { requestAnimationFrame(fall); }
+    else { running = false; ctx.clearRect(0, 0, window.innerWidth, window.innerHeight); }
+  }
+
+  render();
+  setInterval(render, 1000);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) render();
+  });
+})();
+</script>
